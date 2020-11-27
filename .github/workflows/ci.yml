@@ -77,6 +77,13 @@ jobs:
           echo 'puts "INSTANCE TOKEN: #{Gitlab::CurrentSettings.current_application_settings.runners_registration_token}"' | \
             docker exec -i ${{ job.services.gitlab.id }} gitlab-rails console | \
             awk '/^INSTANCE TOKEN:/ {print $NF}' > ~/INSTANCE_TOKEN
+      - name: Wait for GitLab API
+        run: |
+          read GITLAB_API_IP < ~/GITLAB_IP
+          until wget -t 1 "http://${GITLAB_API_IP}:80" -O /dev/null -q; do
+            docker logs gitlab --tail 10
+            sleep 3
+          done
       - name: Run tests
         run: bundle exec rake beaker
         env:
